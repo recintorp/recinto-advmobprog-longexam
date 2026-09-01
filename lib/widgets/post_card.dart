@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/post.dart';
 import '../models/comment.dart';
 import '../services/comment_service.dart';
 
 class PostCard extends StatefulWidget {
   final Post post;
-  const PostCard({super.key, required this.post});
+  final VoidCallback? onCommentAdded;
+
+  const PostCard({super.key, required this.post, this.onCommentAdded});
 
   @override
   State<PostCard> createState() => _PostCardState();
@@ -52,18 +55,33 @@ class _PostCardState extends State<PostCard> {
     }
   }
 
-  void _addComment() {
-    if (_commentController.text.trim().isNotEmpty) {
-      setState(() {
-        _comments.add(Comment(
-          id: DateTime.now().millisecondsSinceEpoch,
-          body: _commentController.text.trim(),
-          postId: widget.post.id,
-          userId: 0,
-          username: 'You',
-        ));
-        _commentController.clear();
-      });
+  Future<void> _addComment() async {
+    final text = _commentController.text.trim();
+    if (text.isNotEmpty) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final currentUserId = prefs.getInt('userId');
+
+        if (currentUserId == null) {
+          debugPrint('Error: No active user session found.');
+          return;
+        }
+
+        final newComment = await _commentService.addComment(
+          widget.post.id, 
+          text, 
+          currentUserId,
+        );
+
+        setState(() {
+          _comments.add(newComment);
+          _commentController.clear();
+        });
+
+        widget.onCommentAdded?.call(); 
+      } catch (e) {
+        debugPrint('Failed to send comment: $e');
+      }
     }
   }
 
@@ -75,7 +93,6 @@ class _PostCardState extends State<PostCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header (Avatar, Name, Time, Options)
           ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 12.0),
             leading: CircleAvatar(
@@ -98,15 +115,11 @@ class _PostCardState extends State<PostCard> {
               ],
             ),
           ),
-          
-          // Post Body
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
             child: Text(widget.post.body, style: const TextStyle(fontSize: 15, height: 1.3)),
           ),
           const SizedBox(height: 8),
-          
-          // Stats Row (Likes count, Comment count)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
             child: Row(
@@ -130,10 +143,7 @@ class _PostCardState extends State<PostCard> {
               ],
             ),
           ),
-          
           const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
-          
-          // Action Buttons (Like, Comment, Share)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
             child: Row(
@@ -157,7 +167,7 @@ class _PostCardState extends State<PostCard> {
                 Expanded(
                   child: TextButton.icon(
                     style: TextButton.styleFrom(foregroundColor: Colors.grey[700]),
-                    icon: Icon(Icons.reply_outlined, color: Colors.grey[700]), // Share icon
+                    icon: Icon(Icons.reply_outlined, color: Colors.grey[700]), 
                     label: Text('Share', style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.bold)),
                     onPressed: () {},
                   ),
@@ -165,8 +175,6 @@ class _PostCardState extends State<PostCard> {
               ],
             ),
           ),
-          
-          // Comments Section
           if (_showComments) ...[
             const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
             _isLoadingComments 
@@ -208,7 +216,7 @@ class _PostCardState extends State<PostCard> {
                                   ),
                                   const Padding(
                                     padding: EdgeInsets.only(left: 12.0, top: 4.0),
-                                    child: Text('2h  Like  Reply', style: TextStyle(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.bold)),
+                                    child: Text('Just now  Like  Reply', style: TextStyle(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.bold)),
                                   ),
                                 ],
                               ),
@@ -218,7 +226,6 @@ class _PostCardState extends State<PostCard> {
                       );
                     },
                   ),
-            // Add Comment Input
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: Row(

@@ -38,7 +38,7 @@ class _NewsfeedScreenState extends State<NewsfeedScreen> {
         children: [
           CircleAvatar(
             backgroundColor: Colors.brown.shade200,
-            backgroundImage: const NetworkImage('https://picsum.photos/200'), // Authenticated user placeholder
+            backgroundImage: const NetworkImage('https://picsum.photos/200'),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -61,7 +61,7 @@ class _NewsfeedScreenState extends State<NewsfeedScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[300], // FB thick grey dividers between cards
+      backgroundColor: Colors.grey[300],
       appBar: AppBar(
         title: const Text(
           'Moppibook',
@@ -90,12 +90,18 @@ class _NewsfeedScreenState extends State<NewsfeedScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: _posts.length + 1,
-              itemBuilder: (context, index) {
-                if (index == 0) return _buildCreatePostHeader();
-                return PostCard(post: _posts[index - 1]);
-              },
+          : RefreshIndicator(
+              onRefresh: _loadPosts,
+              child: ListView.builder(
+                itemCount: _posts.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) return _buildCreatePostHeader();
+                  return PostCard(
+                    post: _posts[index - 1],
+                    onCommentAdded: _loadPosts,
+                  );
+                },
+              ),
             ),
     );
   }
