@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/post.dart';
+import '../models/user.dart';
 import '../services/post_service.dart';
+import '../services/user_service.dart';
 import '../widgets/post_card.dart';
 
 class NewsfeedScreen extends StatefulWidget {
@@ -12,7 +14,9 @@ class NewsfeedScreen extends StatefulWidget {
 
 class _NewsfeedScreenState extends State<NewsfeedScreen> {
   final PostService _postService = PostService();
+  final UserService _userService = UserService();
   List<Post> _posts = [];
+  Map<int, User> _usersById = {};
   bool _isLoading = true;
 
   @override
@@ -23,16 +27,28 @@ class _NewsfeedScreenState extends State<NewsfeedScreen> {
 
   Future<void> _loadPosts() async {
     try {
-      final posts = await _postService.getPosts();
-      if (mounted) setState(() => _posts = posts);
+      final results = await Future.wait([
+        _postService.getPosts(),
+        _userService.getUsers(),
+      ]);
+      final posts = results[0] as List<Post>;
+      final users = results[1] as List<User>;
+      if (mounted) {
+        setState(() {
+          _posts = posts;
+          _usersById = {for (final u in users) u.id: u};
+        });
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Widget _buildCreatePostHeader() {
+  Widget _buildCreatePostHeader(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
-      color: Colors.white,
+      color: theme.cardColor,
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       child: Row(
         children: [
@@ -45,10 +61,13 @@ class _NewsfeedScreenState extends State<NewsfeedScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade400),
+                border: Border.all(color: theme.dividerColor),
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: const Text('What\'s on your mind?', style: TextStyle(color: Colors.black54, fontSize: 16)),
+              child: Text(
+                "What's on your mind?",
+                style: TextStyle(color: theme.hintColor, fontSize: 16),
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -60,14 +79,16 @@ class _NewsfeedScreenState extends State<NewsfeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.grey[300],
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Moppibook',
           style: TextStyle(
             fontFamily: 'Klavika',
-            color: Colors.brown,
+            color: theme.appBarTheme.foregroundColor,
             fontSize: 32,
             fontWeight: FontWeight.bold,
             letterSpacing: -1.2,
@@ -75,15 +96,15 @@ class _NewsfeedScreenState extends State<NewsfeedScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_circle, color: Colors.black87),
+            icon: Icon(Icons.add_circle, color: theme.iconTheme.color),
             onPressed: () {},
           ),
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.black87),
+            icon: Icon(Icons.search, color: theme.iconTheme.color),
             onPressed: () {},
           ),
           IconButton(
-            icon: const Icon(Icons.messenger, color: Colors.black87),
+            icon: Icon(Icons.messenger, color: theme.iconTheme.color),
             onPressed: () {},
           ),
         ],
@@ -95,9 +116,11 @@ class _NewsfeedScreenState extends State<NewsfeedScreen> {
               child: ListView.builder(
                 itemCount: _posts.length + 1,
                 itemBuilder: (context, index) {
-                  if (index == 0) return _buildCreatePostHeader();
+                  if (index == 0) return _buildCreatePostHeader(context);
+                  final post = _posts[index - 1];
                   return PostCard(
-                    post: _posts[index - 1],
+                    post: post,
+                    author: _usersById[post.userId],
                     onCommentAdded: _loadPosts,
                   );
                 },

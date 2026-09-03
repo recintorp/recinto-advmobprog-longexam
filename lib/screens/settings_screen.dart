@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/user_service.dart';
+import '../providers/theme_provider.dart';
 import 'signin_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -23,6 +25,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildSectionHeader(String title, String subtitle) {
+    final theme = Theme.of(context);
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Column(
@@ -30,28 +34,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text(subtitle, style: TextStyle(fontSize: 14, color: Colors.grey[700])),
+          Text(subtitle, style: TextStyle(fontSize: 14, color: theme.hintColor)),
         ],
       ),
     );
   }
 
   Widget _buildListTile(IconData icon, String title, {VoidCallback? onTap, Color? iconColor, Color? textColor}) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final defaultColor = isDark ? Colors.white : Colors.black87;
+
     return ListTile(
-      leading: Icon(icon, color: iconColor ?? Colors.black87, size: 26),
-      title: Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: textColor ?? Colors.black87)),
+      leading: Icon(icon, color: iconColor ?? theme.iconTheme.color, size: 26),
+      title: Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: textColor ?? defaultColor)),
       onTap: onTap ?? () {},
+    );
+  }
+
+  Widget _buildSwitchTile(IconData icon, String title, bool value, ValueChanged<bool> onChanged) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final defaultColor = isDark ? Colors.white : Colors.black87;
+
+    return SwitchListTile(
+      secondary: Icon(icon, color: theme.iconTheme.color, size: 26),
+      title: Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: defaultColor)),
+      value: value,
+      activeThumbColor: Colors.brown,
+      onChanged: onChanged,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final fieldFillColor = isDark ? Colors.grey[800] : Colors.grey[200];
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Settings & privacy', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         actions: [
-          IconButton(icon: const Icon(Icons.search, color: Colors.black87), onPressed: () {}),
+          IconButton(icon: Icon(Icons.search, color: theme.iconTheme.color), onPressed: () {}),
         ],
       ),
       body: ListView(
@@ -61,9 +88,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: TextField(
               decoration: InputDecoration(
                 hintText: 'Search settings',
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                prefixIcon: Icon(Icons.search, color: theme.iconTheme.color),
                 filled: true,
-                fillColor: Colors.grey[200],
+                fillColor: fieldFillColor,
                 contentPadding: const EdgeInsets.symmetric(vertical: 0),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
@@ -79,6 +106,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildListTile(Icons.settings_outlined, 'Default audience settings'),
           const Divider(thickness: 1, height: 32),
           _buildSectionHeader('Preferences', 'Customize your experience on Moppibook.'),
+          _buildSwitchTile(
+            Icons.dark_mode_outlined,
+            'Dark Mode',
+            themeProvider.isDarkMode,
+            (value) => themeProvider.toggleTheme(value),
+          ),
           _buildListTile(Icons.tune, 'Content preferences'),
           _buildListTile(Icons.thumb_up_alt_outlined, 'Reaction preferences'),
           _buildListTile(Icons.notifications_none, 'Notifications'),
@@ -87,9 +120,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildListTile(Icons.language, 'Language and region'),
           const Divider(thickness: 1, height: 32),
           _buildListTile(
-            Icons.logout, 
-            'Sign Out', 
-            iconColor: Colors.red, 
+            Icons.logout,
+            'Sign Out',
+            iconColor: Colors.red,
             textColor: Colors.red,
             onTap: _handleLogout,
           ),

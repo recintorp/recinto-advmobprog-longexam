@@ -8,4 +8,14 @@ A new Flutter project that focuses on advanced topics, covering mobile-to-web tr
 
 ### Project Architecture & Discussion
 
-I built this app like a well-organized team where everyone has a specific job. First, I created the Models, which act as simple blueprints telling the app what a post or user looks like. Next, I set up the Services, which act as the messengers that travel out to the internet to grab raw information and pack it neatly using those blueprints. Finally, I designed the Screens, which are the actual pages you see and tap on your phone. When you open the app, your screen asks the service for data, the service fetches and cleans it up using the models, and the screen instantly turns that data into a fun, interactive feed.
+I like to think of building this app the same way you'd build a good team, where everyone has one clear job to do.
+
+First come the Models. These are like simple blueprints, they just describe what a "post" or a "user" should look like, so every part of the app agrees on the same shape of information.
+
+Next are the Services. Think of these as messengers. They run out to the internet, grab the raw, messy information, and then neatly organize it using the blueprints from the Models, so it comes back clean and ready to use.
+
+Finally, there are the Screens. These are the actual pages you see and tap on your phone, the part everyone actually notices.
+
+So here's how it all comes together: when you open the app, the Screen asks the Service for data. The Service fetches it and tidies it up using the Models. Then the Screen takes that clean data and turns it into the fun, scrollable feed you actually interact with.
+
+It's a small team with a clear chain of command, and that's exactly what makes the app feel fast and organized under the hood.
